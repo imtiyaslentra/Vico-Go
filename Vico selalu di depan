@@ -94,20 +94,20 @@ local potanum = 15
 local Services = {game:GetService("AdService"),game:GetService("SocialService")}
 
 local function get_closest_entity(Object)
-	task.spawn(function()
-		local closest
-		local max_distance = math.huge
-		for index, entity in workspace.Alive:GetChildren() do
-			if entity.Name ~= local_player.Name then
-				local distance = (Object.Position - entity.HumanoidRootPart.Position).Magnitude
-				if distance < max_distance then
-					closest_Entity = entity
-					max_distance = distance
-				end
+	local closest
+	local max_distance = math.huge
+
+	for _, entity in ipairs(workspace.Alive:GetChildren()) do
+		if entity.Name ~= local_player.Name and entity:FindFirstChild("HumanoidRootPart") then
+			local distance = (Object.Position - entity.HumanoidRootPart.Position).Magnitude
+			if distance < max_distance then
+				closest = entity
+				max_distance = distance
 			end
 		end
-		return closest_Entity
-	end)
+	end
+	
+	return closest
 end
 
 -- Resolusi parry remote
@@ -133,7 +133,7 @@ end
 local aura_table = {
 	canParry = true,
 	is_Spamming = false,
-	parry_Range = 31,
+	parry_Range = 25,
 	spam_Range = 0,
 	hit_Count = 0,
 	hit_Time = tick(),
@@ -235,15 +235,19 @@ task.defer(function()
     end)
 end)
 
-local closest_Entity_To_mouse = nil
-
 RunService.Heartbeat:Connect(function()
     -- Update waktu yang dibutuhkan untuk hit
     local Takentime = tick() - aura_table.hit_Time
-    
+
     -- Ambil entitas terdekat dari mouse
     task.spawn(function()
         closest_Entity_To_mouse = getClosestEntityToMouse()
+        -- Cek apakah closest_Entity_To_mouse valid
+        if closest_Entity_To_mouse then
+            -- Logika tambahan jika perlu
+        else
+            print("closest_Entity_To_mouse is nil")
+        end
     end)
 end)
 
