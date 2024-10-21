@@ -235,6 +235,9 @@ task.defer(function()
     end)
 end)
 
+local autospamvico
+
+-- Fungsi untuk mengupdate posisi entity terdekat
 RunService.Heartbeat:Connect(function()
     -- Update waktu yang dibutuhkan untuk hit
     local Takentime = tick() - aura_table.hit_Time
@@ -251,54 +254,58 @@ RunService.Heartbeat:Connect(function()
     end)
 end)
 
-task.spawn(function()
-    autospamvico = RunService.Heartbeat:Connect(function()
-        if not auto_spam or not workspace.Alive:FindFirstChild(local_player.Name) or training_mode then
-            -- Reset aura table jika tidak dalam mode spam
-            aura_table.hit_Count = 0
-            aura_table.is_Spamming = false
-            aura_table.last_target = nil
-            ismyautoparryspamming = false
-            aura_table.spam_Range = 0
-            return
-        end
+-- Definisikan autospamvico sebagai fungsi
+autospamvico = function()
+    if not auto_spam or not workspace.Alive:FindFirstChild(local_player.Name) or training_mode then
+        -- Reset aura table jika tidak dalam mode spam
+        aura_table.hit_Count = 0
+        aura_table.is_Spamming = false
+        aura_table.last_target = nil
+        ismyautoparryspamming = false
+        aura_table.spam_Range = 0
+        return
+    end
 
-        -- Periksa apakah closest_Entity ada dan valid
-        if closest_Entity and workspace.Alive:FindFirstChild(closest_Entity.Name) and ((not standalone and aura_table.is_Spamming) or (standalone)) then
-            local playerPosition = local_player.Character.PrimaryPart.Position
-            local entityPosition = closest_Entity.HumanoidRootPart.Position
-            local distanceToEntity = local_player:DistanceFromCharacter(entityPosition)
+    -- Periksa apakah closest_Entity ada dan valid
+    if closest_Entity and workspace.Alive:FindFirstChild(closest_Entity.Name) and ((not standalone and aura_table.is_Spamming) or (standalone)) then
+        local playerPosition = local_player.Character.PrimaryPart.Position
+        local entityPosition = closest_Entity.HumanoidRootPart.Position
+        local distanceToEntity = local_player:DistanceFromCharacter(entityPosition)
 
-            -- Cek jarak untuk spam
-            if distanceToEntity <= aura_table.spam_Range then
-                ismyautoparryspamming = true
+        -- Cek jarak untuk spam
+        if distanceToEntity <= aura_table.spam_Range then
+            ismyautoparryspamming = true
 
-                local cf = camera.CFrame
-                local direction = (entityPosition - playerPosition).Unit
-                local offset = Vector3.new(math.random(-50, 50), math.random(-10, 10), math.random(-50, 50))
-                local randomTarget = entityPosition + direction * 50 + offset
-                local targetPosition = closest_Entity_To_mouse.HumanoidRootPart.Position
-                local fireArgs = {
-                    {[closest_Entity_To_mouse.Name] = targetPosition},
-                    {targetPosition.X, targetPosition.Y}
-                }
+            local cf = camera.CFrame
+            local direction = (entityPosition - playerPosition).Unit
+            local offset = Vector3.new(math.random(-50, 50), math.random(-10, 10), math.random(-50, 50))
+            local randomTarget = entityPosition + direction * 50 + offset
+            local targetPosition = closest_Entity_To_mouse.HumanoidRootPart.Position
+            local fireArgs = {
+                {[closest_Entity_To_mouse.Name] = targetPosition},
+                {targetPosition.X, targetPosition.Y}
+            }
 
-                task.defer(function()
-                    for count = 1, potanum do
-                        if auto_curve then
-                            originalParryRemote:FireServer(0, CFrame.new(cf.Position, randomTarget), unpack(fireArgs))
-                        else
-                            originalParryRemote:FireServer(0, cf, unpack(fireArgs))
-                        end
+            task.defer(function()
+                for count = 1, potanum do
+                    if auto_curve then
+                        originalParryRemote:FireServer(0, CFrame.new(cf.Position, randomTarget), unpack(fireArgs))
+                    else
+                        originalParryRemote:FireServer(0, cf, unpack(fireArgs))
                     end
-                end)
-            else
-                ismyautoparryspamming = false
-            end
+                end
+            end)
         else
             ismyautoparryspamming = false
         end
-    end)
+    else
+        ismyautoparryspamming = false
+    end
+end
+
+-- Menghubungkan fungsi autospamvico ke RunService.Heartbeat
+task.spawn(function()
+    RunService.Heartbeat:Connect(autospamvico)
 end)
 
 local function linear_predict(a: Vector3, b: Vector3, time_volume: number)
