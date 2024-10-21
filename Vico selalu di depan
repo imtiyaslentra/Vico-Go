@@ -2,14 +2,20 @@ if _G.Ran == true then return end
 wait()
 _G.Ran = true
 repeat wait() until game:IsLoaded()
+
 local Stats = game:GetService("Stats")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local local_player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
 local speedFactorPingBased
 local speedFactor
 local Nurysium_Util = loadstring(game:HttpGet("https://raw.githubusercontent.com/flezzpe/Nurysium/main/nurysium_helper.lua"))()
+
+-- Fungsi untuk mendapatkan TrainingBall
 local function getTrainingBall()
 	for index, ball in workspace:WaitForChild("TrainingBalls"):GetChildren() do
 		if ball:IsA("BasePart") and ball:GetAttribute("realBall") then
@@ -17,15 +23,9 @@ local function getTrainingBall()
 		end
 	end
 end
-local ismyautoparryspamming
-local local_player = Players.LocalPlayer
-local camera = workspace.CurrentCamera
-local standalone = false
 
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local PlayerGui = player:WaitForChild("PlayerGui")
+-- Notifikasi dengan desain menarik
+local PlayerGui = local_player:WaitForChild("PlayerGui")
 
 -- Membuat frame untuk notifikasi
 local NotificationFrame = Instance.new("Frame")
@@ -34,25 +34,25 @@ NotificationFrame.Position = UDim2.new(0.5, -150, -0.1, 0)
 NotificationFrame.BackgroundTransparency = 0.2
 NotificationFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 NotificationFrame.BorderSizePixel = 0
-NotificationFrame.Parent = PlayerGui:WaitForChild("ScreenGui") -- Harus ada ScreenGui di PlayerGui
+NotificationFrame.Parent = PlayerGui:WaitForChild("ScreenGui")
 
--- Menambahkan efek rounding pada sudut
+-- Efek rounding pada sudut
 local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 15)
 UICorner.Parent = NotificationFrame
 
 -- Label teks untuk pesan notifikasi
-local TextLabel = Instance.new("Welcome to Vico Hub Script")
+local TextLabel = Instance.new("TextLabel") -- Ini harus "TextLabel", bukan "Welcome to Vico Hub Script"
 TextLabel.Size = UDim2.new(1, 0, 0.6, 0)
 TextLabel.Position = UDim2.new(0, 0, 0.2, 0)
 TextLabel.BackgroundTransparency = 1
 TextLabel.Font = Enum.Font.GothamBold
 TextLabel.TextSize = 20
 TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-TextLabel.Text = "you have used Vico script thank you!"
+TextLabel.Text = "You have used Vico Script, thank you!"
 TextLabel.Parent = NotificationFrame
 
--- Menambahkan ikon notifikasi (misalnya ikon hadiah)
+-- Ikon notifikasi
 local NotificationIcon = Instance.new("ImageLabel")
 NotificationIcon.Size = UDim2.new(0, 50, 0, 50)
 NotificationIcon.Position = UDim2.new(0, 20, 0.2, 0)
@@ -60,47 +60,36 @@ NotificationIcon.BackgroundTransparency = 1
 NotificationIcon.Image = "rbxassetid://10590477450"  -- Ganti dengan ID ikon Anda
 NotificationIcon.Parent = NotificationFrame
 
--- Efek Tween untuk notifikasi yang muncul dari atas ke tengah layar
+-- Tween untuk animasi notifikasi masuk
 local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out)
 local tween = TweenService:Create(NotificationFrame, tweenInfo, {Position = UDim2.new(0.5, -150, 0.1, 0)})
 tween:Play()
 
--- Durasi notifikasi sebelum menghilang
+-- Tunggu beberapa detik sebelum notifikasi menghilang
 wait(3)
 
--- Efek Tween untuk menghilangkan notifikasi dengan fade out
+-- Tween untuk fade out notifikasi
 local fadeOutTweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local fadeOutTween = TweenService:Create(NotificationFrame, fadeOutTweenInfo, {BackgroundTransparency = 1, Position = UDim2.new(0.5, -150, -0.2, 0)})
 fadeOutTween:Play()
 
--- Menghapus notifikasi setelah tween selesai
 fadeOutTween.Completed:Connect(function()
 	NotificationFrame:Destroy()
 end)
 
+-- Sisa kode terkait permainan
 
 local originalParryRemote
-local originalResolveParryRemote 
-local visualizervico, autospamvico, autoparryvico, autowinvico
-local nurysium_Data = nil
-local hit_Sound = nil
-local closest_Entity = nil
+local originalResolveParryRemote
+local closest_Entity
 local aura_Enabled = false
-local auto_curve = false
-local auto_spam = false
-local training_mode = false
-local anti_curve_spam_Enabled = false
-local visualize_Enabled = false
-local auto_win = false
-local potanum = 15
-local Services = {game:GetService("AdService"),game:GetService("SocialService")}
 
 local function get_closest_entity(Object)
 	task.spawn(function()
 		local closest
 		local max_distance = math.huge
 		for index, entity in workspace.Alive:GetChildren() do
-			if entity.Name ~= Players.LocalPlayer.Name then
+			if entity.Name ~= local_player.Name then
 				local distance = (Object.Position - entity.HumanoidRootPart.Position).Magnitude
 				if distance < max_distance then
 					closest_Entity = entity
@@ -112,18 +101,11 @@ local function get_closest_entity(Object)
 	end)
 end
 
+-- Resolusi parry remote
 function resolve_parry_Remote()
- local temp_remote = game:GetService("VirtualUser"):WaitForChild("\n\n\n\n\n")
-
-    if not temp_remote then
-        return
-    end
-
-    if not temp_remote:IsA('RemoteEvent') then
-        return
-    end
-
-    originalParryRemote = temp_remote
+	local temp_remote = game:GetService("VirtualUser"):WaitForChild("\n\n\n\n\n")
+	if not temp_remote or not temp_remote:IsA('RemoteEvent') then return end
+	originalParryRemote = temp_remote
 end
 
 resolve_parry_Remote()
@@ -131,6 +113,7 @@ resolve_parry_Remote()
 function walk_to(position)
 	local_player.Character.Humanoid:MoveTo(position)
 end
+
 local function get_center()
 	for _, object in workspace.Map:GetDescendants() do
 		if object.Name == 'BALLSPAWN' then
@@ -139,18 +122,16 @@ local function get_center()
 	end
 end
 
-local function linear_predict(a: number, b: number, time_volume: number)
-    time_volume = math.clamp(time_volume, 0, 1)
-
-    return a + (b - a) * time_volume
+local function linear_predict(a, b, time_volume)
+	time_volume = math.clamp(time_volume, 0, 1)
+	return a + (b - a) * time_volume
 end
-
 
 local aura_table = {
 	canParry = true,
 	is_Spamming = false,
 	parry_Range = 31,
-	spam_Range = 0,  
+	spam_Range = 0,
 	hit_Count = 0,
 	hit_Time = tick(),
 	ball_Warping = tick(),
@@ -158,7 +139,7 @@ local aura_table = {
 	last_target = nil,
 }
 
-workspace:WaitForChild("Balls").ChildRemoved:Connect(function(child)
+workspace:WaitForChild("Balls").ChildRemoved:Connect(function()
 	aura_table.hit_Count = 0
 	aura_table.is_ball_Warping = false
 	aura_table.is_Spamming = false
@@ -168,130 +149,51 @@ end)
 
 ReplicatedStorage.Remotes.ParrySuccessAll.OnClientEvent:Connect(function()
 	aura_table.hit_Count += 1
-
 	task.delay(0.185, function()
 		aura_table.hit_Count -= 1
 	end)
 end)
 
--- Fungsi Gaes
+-- Visualizer set
+local Visualize = Instance.new("Part", workspace)
+local Visualize1 = Instance.new("Part", workspace)
+Visualize.Color = Color3.new(0, 1, 0)
+Visualize.Material = Enum.Material.ForceField
+Visualize.Transparency = 0.5
+Visualize.Anchored = true
+Visualize.CanCollide = false
+Visualize.Size = Vector3.new(30, 30, 30)
 
-local Services = {game:GetService("AdService"), game:GetService("SocialService")}
-	local originalParryRemote = nil
+Visualize1.Color = Color3.new(1, 0, 0)
+Visualize1.Material = Enum.Material.ForceField
+Visualize1.Transparency = 0.5
+Visualize1.Anchored = true
+Visualize1.CanCollide = false
+Visualize1.Size = Vector3.new(aura_table.spam_Range, aura_table.spam_Range, aura_table.spam_Range)
 
-	function resolve_parry_Remote()
-        local temp_remote = game:GetService("VirtualUser"):WaitForChild("\n\n\n\n\n")
-        if not temp_remote or not temp_remote:IsA('RemoteEvent') then
-            return
-        end
-        originalParryRemote = temp_remote
-    end
+local Highlight1 = Instance.new("Highlight")
+Highlight1.Parent = Visualize1
+Highlight1.FillTransparency = 0
+Highlight1.OutlineColor = Color3.new(1, 1, 1)
 
-    resolve_parry_Remote()
+local Highlight = Instance.new("Highlight")
+Highlight.Parent = Visualize
+Highlight.FillTransparency = 0
+Highlight.OutlineColor = Color3.new(1, 1, 1)
 
-	local camera = workspace.CurrentCamera
-	local mouse = game.Players.LocalPlayer:GetMouse()
-
-	local function getClosestEntity()
-		local closest_Entity = nil
-		local shortestDistance = math.huge
-
-		for _, entity in pairs(workspace.Alive:GetChildren()) do
-			if entity:IsA("Model") and entity:FindFirstChild("HumanoidRootPart") then
-				local screenPoint = camera:WorldToViewportPoint(entity.HumanoidRootPart.Position)
-				local distanceToMouse = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(mouse.X, mouse.Y)).Magnitude
-
-				if distanceToMouse < shortestDistance then
-					closest_Entity = entity
-					shortestDistance = distanceToMouse
-				end
-			end
-		end
-
-		return closest_Entity
-	end
-
-	RunService.RenderStepped:Connect(function()
-		if is_Green and originalParryRemote then
-			local closest_Entity = getClosestEntity()
-			if closest_Entity then
-				local cf = camera.CFrame
-				local x, y, z, R00, R01, R02, R10, R11, R12, R20, R21, R22 = cf:GetComponents()
-
-				originalParryRemote:FireServer(
-					0,
-					CFrame.new(x, y, z, R00, R01, R02, R10, R11, R12, R20, R21, R22),
-					{[closest_Entity.Name] = closest_Entity.HumanoidRootPart.Position},
-					{closest_Entity.HumanoidRootPart.Position.X, closest_Entity.HumanoidRootPart.Position.Y},
-					false
-				)
-			end
-		end
-	end)
-
-	
-	end
-    
-    -- Visualizer Set
-    
-    
-    coroutine.wrap(WWJM_fake_script)()
-
-end
-
-local function clamp(value, min, max)
-	return math.max(min, math.min(max, value))
-end
-local self = Nurysium_Util.getBall()
-	wait(0.1)
-	local Visualize = Instance.new("Part",workspace)
-	local Visualize1 = Instance.new("Part",workspace)
-	wait(0.5)
-	Visualize.Color = Color3.new(0, 1, 0)
-	Visualize.Material = Enum.Material.ForceField
-	Visualize.Transparency = 0.5
-	Visualize.Anchored = true
-	Visualize.CanCollide = false
-	Visualize.CastShadow = false
-	Visualize.Shape = Enum.PartType.Ball
-	Visualize.Size = Vector3.new(30,30,30)
-	Visualize1.Color = Color3.new(1, 0, 0)
-	Visualize1.Material = Enum.Material.ForceField
-	Visualize1.Transparency = 0.5
-	Visualize1.Anchored = true
-	Visualize1.CanCollide = false
-	Visualize1.CastShadow = false
-	Visualize1.Shape = Enum.PartType.Ball
-	Visualize1.Size = Vector3.new(aura_table.spam_Range, aura_table.spam_Range, aura_table.spam_Range)
-
-	local Highlight1 = Instance.new("Highlight")
-	Highlight1.Parent = Visualize1
-	Highlight1.Enabled = true
-	Highlight1.FillTransparency = 0
-	Highlight1.OutlineColor = Color3.new(1, 1, 1)
-	local Highlight = Instance.new("Highlight")
-	Highlight.Parent = Visualize
-	Highlight.Enabled = true
-	Highlight.FillTransparency = 0
-	Highlight.OutlineColor = Color3.new(1, 1, 1)
-	
 task.spawn(function()
-	visualizervico = RunService.RenderStepped:Connect(function()
-		if visualize_Enabled then
+	RunService.RenderStepped:Connect(function()
+		if aura_table.is_Spamming then
 			Visualize.Transparency = 0
-			Visualize.Material = Enum.Material.ForceField
 			Visualize.Size = Vector3.new(aura_table.parry_Range, aura_table.parry_Range, aura_table.parry_Range)
 			Visualize.CFrame = CFrame.new(local_player.Character.PrimaryPart.Position)
 			Visualize1.Transparency = 0
-			Visualize1.Material = Enum.Material.ForceField
 			Visualize1.Size = Vector3.new(aura_table.spam_Range, aura_table.spam_Range, aura_table.spam_Range)
 			Visualize1.CFrame = CFrame.new(local_player.Character.PrimaryPart.Position)
 		else
-			Visualize.Material = Enum.Material.ForceField
 			Visualize.Transparency = 1
-			Visualize1.Material = Enum.Material.ForceField
 			Visualize1.Transparency = 1
-		end	
+		end
 	end)
 end)
 
