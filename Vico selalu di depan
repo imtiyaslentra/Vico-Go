@@ -198,23 +198,36 @@ task.spawn(function()
 end)
 
 task.defer(function()
-	autowinvico = RunService.Stepped:Connect(function()
-		if auto_win and workspace.Alive:FindFirstChild(local_player.Name) then
-			local self = Nurysium_Util.getBall()
-			if not self then return end
-			
-			local player = local_player.Character
-			local ball_Position = self.Position
-			local ball_Distance = (player.HumanoidRootPart.Position - ball_Position).Magnitude
-			
-			local ping = game:GetService("Stats"):FindFirstChild("PerformanceStats"):FindFirstChild("Ping"):GetValue() or 0
-			local adjusted_Distance = math.clamp(15 + (ping / 50), 15, 50)
+    autowinvar = RunService.Stepped:Connect(function()
+        -- Memastikan auto_win aktif dan player ada di workspace
+        if auto_win and workspace.Alive:FindFirstChild(local_player.Name) then
+            local self = Nurysium_Util.getBall()  -- Mengambil bola
+            if not self then return end  -- Keluar jika tidak ada bola
 
-			local angle = tick() * 2
-			local offset = Vector3.new(math.cos(angle) * adjusted_Distance, math.sin(angle) * 5, math.sin(angle) * adjusted_Distance)
-			local target_Position = ball_Position + offset
-			
-			player.HumanoidRootPart.CFrame = CFrame.new(target_Position, ball_Position)
-		end
-	end)
+            local player = local_player.Character  -- Referensi karakter player
+            local ball_Position = self.Position  -- Posisi bola
+
+            -- Menghitung jarak antara player dan bola
+            local ball_Distance = (player.HumanoidRootPart.Position - ball_Position).Magnitude
+
+            -- Mengambil ping dan menghitung jarak yang disesuaikan
+            local ping = game:GetService("Stats"):FindFirstChild("PerformanceStats"):FindFirstChild("Ping"):GetValue() or 0
+            local adjusted_Distance = math.clamp(15 + (ping / 50), 15, 50)
+
+            -- Menghitung posisi target dengan efek osilasi
+            local angle = tick() * 2
+            local offset = Vector3.new(
+                math.cos(angle) * adjusted_Distance, 
+                math.sin(angle) * 5, 
+                math.sin(angle) * adjusted_Distance
+            )
+            local target_Position = ball_Position + offset
+
+            -- Memindahkan player ke posisi target
+            player.HumanoidRootPart.CFrame = CFrame.new(target_Position, ball_Position)
+
+            -- (Optional) Anda bisa menggunakan ball_Distance untuk logika lain, misalnya:
+            -- print("Distance to ball:", ball_Distance)
+        end
+    end)
 end)
