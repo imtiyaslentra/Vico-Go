@@ -82,7 +82,16 @@ end)
 local originalParryRemote
 local originalResolveParryRemote
 local closest_Entity
+local visualizervico, autospamvico, autoparryvico, autowinvico
 local aura_Enabled = false
+local auto_curve = false
+local auto_spam = false
+local training_mode = false
+local anti_curve_spam_Enabled = false
+local visualize_Enabled = false
+local auto_win = false
+local potanum = 15
+local Services = {game:GetService("AdService"),game:GetService("SocialService")}
 
 local function get_closest_entity(Object)
 	task.spawn(function()
@@ -106,12 +115,6 @@ function resolve_parry_Remote()
 	local temp_remote = game:GetService("VirtualUser"):WaitForChild("\n\n\n\n\n")
 	if not temp_remote or not temp_remote:IsA('RemoteEvent') then return end
 	originalParryRemote = temp_remote
-end
-
-resolve_parry_Remote()
-
-function walk_to(position)
-	local_player.Character.Humanoid:MoveTo(position)
 end
 
 local function get_center()
@@ -198,7 +201,7 @@ task.spawn(function()
 end)
 
 task.defer(function()
-    autowinvar = RunService.Stepped:Connect(function()
+    autowinvico = RunService.Stepped:Connect(function()
         -- Memastikan auto_win aktif dan player ada di workspace
         if auto_win and workspace.Alive:FindFirstChild(local_player.Name) then
             local self = Nurysium_Util.getBall()  -- Mengambil bola
