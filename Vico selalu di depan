@@ -1,0 +1,651 @@
+if _G.Ran == true then return end
+wait()
+_G.Ran = true
+repeat wait() until game:IsLoaded()
+local Stats = game:GetService("Stats")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local speedFactorPingBased
+local speedFactor
+local Nurysium_Util = loadstring(game:HttpGet("https://raw.githubusercontent.com/flezzpe/Nurysium/main/nurysium_helper.lua"))()
+local function getTrainingBall()
+	for index, ball in workspace:WaitForChild("TrainingBalls"):GetChildren() do
+		if ball:IsA("BasePart") and ball:GetAttribute("realBall") then
+			return ball
+		end
+	end
+end
+local ismyautoparryspamming
+local local_player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+local standalone = false
+
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local PlayerGui = player:WaitForChild("PlayerGui")
+
+-- Membuat frame untuk notifikasi
+local NotificationFrame = Instance.new("Frame")
+NotificationFrame.Size = UDim2.new(0, 300, 0, 100)
+NotificationFrame.Position = UDim2.new(0.5, -150, -0.1, 0)
+NotificationFrame.BackgroundTransparency = 0.2
+NotificationFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+NotificationFrame.BorderSizePixel = 0
+NotificationFrame.Parent = PlayerGui:WaitForChild("ScreenGui") -- Harus ada ScreenGui di PlayerGui
+
+-- Menambahkan efek rounding pada sudut
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 15)
+UICorner.Parent = NotificationFrame
+
+-- Label teks untuk pesan notifikasi
+local TextLabel = Instance.new("Welcome to Vico Hub Script")
+TextLabel.Size = UDim2.new(1, 0, 0.6, 0)
+TextLabel.Position = UDim2.new(0, 0, 0.2, 0)
+TextLabel.BackgroundTransparency = 1
+TextLabel.Font = Enum.Font.GothamBold
+TextLabel.TextSize = 20
+TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel.Text = "you have used Vico script thank you!"
+TextLabel.Parent = NotificationFrame
+
+-- Menambahkan ikon notifikasi (misalnya ikon hadiah)
+local NotificationIcon = Instance.new("ImageLabel")
+NotificationIcon.Size = UDim2.new(0, 50, 0, 50)
+NotificationIcon.Position = UDim2.new(0, 20, 0.2, 0)
+NotificationIcon.BackgroundTransparency = 1
+NotificationIcon.Image = "rbxassetid://10590477450"  -- Ganti dengan ID ikon Anda
+NotificationIcon.Parent = NotificationFrame
+
+-- Efek Tween untuk notifikasi yang muncul dari atas ke tengah layar
+local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out)
+local tween = TweenService:Create(NotificationFrame, tweenInfo, {Position = UDim2.new(0.5, -150, 0.1, 0)})
+tween:Play()
+
+-- Durasi notifikasi sebelum menghilang
+wait(3)
+
+-- Efek Tween untuk menghilangkan notifikasi dengan fade out
+local fadeOutTweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local fadeOutTween = TweenService:Create(NotificationFrame, fadeOutTweenInfo, {BackgroundTransparency = 1, Position = UDim2.new(0.5, -150, -0.2, 0)})
+fadeOutTween:Play()
+
+-- Menghapus notifikasi setelah tween selesai
+fadeOutTween.Completed:Connect(function()
+	NotificationFrame:Destroy()
+end)
+
+
+local originalParryRemote
+local originalResolveParryRemote 
+local visualizervico, autospamvico, autoparryvico, autowinvico
+local nurysium_Data = nil
+local hit_Sound = nil
+local closest_Entity = nil
+local aura_Enabled = false
+local auto_curve = false
+local auto_spam = false
+local training_mode = false
+local anti_curve_spam_Enabled = false
+local visualize_Enabled = false
+local auto_win = false
+local potanum = 15
+local Services = {game:GetService("AdService"),game:GetService("SocialService")}
+
+local function get_closest_entity(Object)
+	task.spawn(function()
+		local closest
+		local max_distance = math.huge
+		for index, entity in workspace.Alive:GetChildren() do
+			if entity.Name ~= Players.LocalPlayer.Name then
+				local distance = (Object.Position - entity.HumanoidRootPart.Position).Magnitude
+				if distance < max_distance then
+					closest_Entity = entity
+					max_distance = distance
+				end
+			end
+		end
+		return closest_Entity
+	end)
+end
+
+function resolve_parry_Remote()
+ local temp_remote = game:GetService("VirtualUser"):WaitForChild("\n\n\n\n\n")
+
+    if not temp_remote then
+        return
+    end
+
+    if not temp_remote:IsA('RemoteEvent') then
+        return
+    end
+
+    originalParryRemote = temp_remote
+end
+
+resolve_parry_Remote()
+
+function walk_to(position)
+	local_player.Character.Humanoid:MoveTo(position)
+end
+local function get_center()
+	for _, object in workspace.Map:GetDescendants() do
+		if object.Name == 'BALLSPAWN' then
+			return object
+		end
+	end
+end
+
+local function linear_predict(a: number, b: number, time_volume: number)
+    time_volume = math.clamp(time_volume, 0, 1)
+
+    return a + (b - a) * time_volume
+end
+
+
+local aura_table = {
+	canParry = true,
+	is_Spamming = false,
+	parry_Range = 31,
+	spam_Range = 0,  
+	hit_Count = 0,
+	hit_Time = tick(),
+	ball_Warping = tick(),
+	is_ball_Warping = false,
+	last_target = nil,
+}
+
+workspace:WaitForChild("Balls").ChildRemoved:Connect(function(child)
+	aura_table.hit_Count = 0
+	aura_table.is_ball_Warping = false
+	aura_table.is_Spamming = false
+	aura_table.canParry = true
+	aura_table.last_target = nil
+end)
+
+ReplicatedStorage.Remotes.ParrySuccessAll.OnClientEvent:Connect(function()
+	aura_table.hit_Count += 1
+
+	task.delay(0.185, function()
+		aura_table.hit_Count -= 1
+	end)
+end)
+
+-- Fungsi Gaes
+
+local Services = {game:GetService("AdService"), game:GetService("SocialService")}
+	local originalParryRemote = nil
+
+	function resolve_parry_Remote()
+        local temp_remote = game:GetService("VirtualUser"):WaitForChild("\n\n\n\n\n")
+        if not temp_remote or not temp_remote:IsA('RemoteEvent') then
+            return
+        end
+        originalParryRemote = temp_remote
+    end
+
+    resolve_parry_Remote()
+
+	local camera = workspace.CurrentCamera
+	local mouse = game.Players.LocalPlayer:GetMouse()
+
+	local function getClosestEntity()
+		local closest_Entity = nil
+		local shortestDistance = math.huge
+
+		for _, entity in pairs(workspace.Alive:GetChildren()) do
+			if entity:IsA("Model") and entity:FindFirstChild("HumanoidRootPart") then
+				local screenPoint = camera:WorldToViewportPoint(entity.HumanoidRootPart.Position)
+				local distanceToMouse = (Vector2.new(screenPoint.X, screenPoint.Y) - Vector2.new(mouse.X, mouse.Y)).Magnitude
+
+				if distanceToMouse < shortestDistance then
+					closest_Entity = entity
+					shortestDistance = distanceToMouse
+				end
+			end
+		end
+
+		return closest_Entity
+	end
+
+	RunService.RenderStepped:Connect(function()
+		if is_Green and originalParryRemote then
+			local closest_Entity = getClosestEntity()
+			if closest_Entity then
+				local cf = camera.CFrame
+				local x, y, z, R00, R01, R02, R10, R11, R12, R20, R21, R22 = cf:GetComponents()
+
+				originalParryRemote:FireServer(
+					0,
+					CFrame.new(x, y, z, R00, R01, R02, R10, R11, R12, R20, R21, R22),
+					{[closest_Entity.Name] = closest_Entity.HumanoidRootPart.Position},
+					{closest_Entity.HumanoidRootPart.Position.X, closest_Entity.HumanoidRootPart.Position.Y},
+					false
+				)
+			end
+		end
+	end)
+
+	
+	end
+    
+    -- Visualizer Set
+    
+    
+    coroutine.wrap(WWJM_fake_script)()
+
+end
+
+local function clamp(value, min, max)
+	return math.max(min, math.min(max, value))
+end
+local self = Nurysium_Util.getBall()
+	wait(0.1)
+	local Visualize = Instance.new("Part",workspace)
+	local Visualize1 = Instance.new("Part",workspace)
+	wait(0.5)
+	Visualize.Color = Color3.new(0, 1, 0)
+	Visualize.Material = Enum.Material.ForceField
+	Visualize.Transparency = 0.5
+	Visualize.Anchored = true
+	Visualize.CanCollide = false
+	Visualize.CastShadow = false
+	Visualize.Shape = Enum.PartType.Ball
+	Visualize.Size = Vector3.new(30,30,30)
+	Visualize1.Color = Color3.new(1, 0, 0)
+	Visualize1.Material = Enum.Material.ForceField
+	Visualize1.Transparency = 0.5
+	Visualize1.Anchored = true
+	Visualize1.CanCollide = false
+	Visualize1.CastShadow = false
+	Visualize1.Shape = Enum.PartType.Ball
+	Visualize1.Size = Vector3.new(aura_table.spam_Range, aura_table.spam_Range, aura_table.spam_Range)
+
+	local Highlight1 = Instance.new("Highlight")
+	Highlight1.Parent = Visualize1
+	Highlight1.Enabled = true
+	Highlight1.FillTransparency = 0
+	Highlight1.OutlineColor = Color3.new(1, 1, 1)
+	local Highlight = Instance.new("Highlight")
+	Highlight.Parent = Visualize
+	Highlight.Enabled = true
+	Highlight.FillTransparency = 0
+	Highlight.OutlineColor = Color3.new(1, 1, 1)
+	
+task.spawn(function()
+	visualizervico = RunService.RenderStepped:Connect(function()
+		if visualize_Enabled then
+			Visualize.Transparency = 0
+			Visualize.Material = Enum.Material.ForceField
+			Visualize.Size = Vector3.new(aura_table.parry_Range, aura_table.parry_Range, aura_table.parry_Range)
+			Visualize.CFrame = CFrame.new(local_player.Character.PrimaryPart.Position)
+			Visualize1.Transparency = 0
+			Visualize1.Material = Enum.Material.ForceField
+			Visualize1.Size = Vector3.new(aura_table.spam_Range, aura_table.spam_Range, aura_table.spam_Range)
+			Visualize1.CFrame = CFrame.new(local_player.Character.PrimaryPart.Position)
+		else
+			Visualize.Material = Enum.Material.ForceField
+			Visualize.Transparency = 1
+			Visualize1.Material = Enum.Material.ForceField
+			Visualize1.Transparency = 1
+		end	
+	end)
+end)
+
+-- Fungsi Untuk AutoWin GES
+
+task.defer(function()
+    autowinvico = RunService.Stepped:Connect(function()
+        -- Memastikan auto_win aktif dan player ada di workspace
+        if auto_win and workspace.Alive:FindFirstChild(local_player.Name) then
+            local self = Nurysium_Util.getBall()  -- Mengambil bola
+            if not self then return end  -- Keluar jika tidak ada bola
+
+            local player = local_player.Character  -- Referensi karakter player
+            local ball_Position = self.Position  -- Posisi bola
+
+            -- Mengambil ping dan menghitung jarak yang disesuaikan
+            local ping = game:GetService("Stats"):FindFirstChild("PerformanceStats"):FindFirstChild("Ping"):GetValue() or 0
+            local adjusted_Distance = math.clamp(15 + (ping / 50), 15, 50)
+
+            -- Menghitung posisi target dengan efek osilasi
+            local angle = tick() * 2
+            local offset = Vector3.new(
+                math.cos(angle) * adjusted_Distance, 
+                math.sin(angle) * 5, 
+                math.sin(angle) * adjusted_Distance
+            )
+            local target_Position = ball_Position + offset
+
+            -- Memindahkan player ke posisi target
+            player.HumanoidRootPart.CFrame = CFrame.new(target_Position, ball_Position)
+        end
+    end)
+end)
+
+-- Fungsi Untuk Auto Spam GES
+
+local closest_Entity_To_mouse = nil
+
+RunService.Heartbeat:Connect(function()
+    -- Update waktu yang dibutuhkan untuk hit
+    local Takentime = tick() - aura_table.hit_Time
+    
+    -- Ambil entitas terdekat dari mouse
+    task.spawn(function()
+        closest_Entity_To_mouse = getClosestEntityToMouse()
+    end)
+end)
+
+task.spawn(function()
+    autospamvico = RunService.Heartbeat:Connect(function()
+        if not auto_spam or not workspace.Alive:FindFirstChild(local_player.Name) or training_mode then
+            -- Reset aura table jika tidak dalam mode spam
+            aura_table.hit_Count = 0
+            aura_table.is_Spamming = false
+            aura_table.last_target = nil
+            ismyautoparryspamming = false
+            aura_table.spam_Range = 0
+            return
+        end
+
+        -- Periksa apakah closest_Entity ada dan valid
+        if closest_Entity and workspace.Alive:FindFirstChild(closest_Entity.Name) and ((not standalone and aura_table.is_Spamming) or (standalone)) then
+            local playerPosition = local_player.Character.PrimaryPart.Position
+            local entityPosition = closest_Entity.HumanoidRootPart.Position
+            local distanceToEntity = local_player:DistanceFromCharacter(entityPosition)
+
+            -- Cek jarak untuk spam
+            if distanceToEntity <= aura_table.spam_Range then
+                ismyautoparryspamming = true
+
+                local cf = camera.CFrame
+                local direction = (entityPosition - playerPosition).Unit
+                local offset = Vector3.new(math.random(-50, 50), math.random(-10, 10), math.random(-50, 50))
+                local randomTarget = entityPosition + direction * 50 + offset
+                local targetPosition = closest_Entity_To_mouse.HumanoidRootPart.Position
+                local fireArgs = {
+                    {[closest_Entity_To_mouse.Name] = targetPosition},
+                    {targetPosition.X, targetPosition.Y}
+                }
+
+                task.defer(function()
+                    for count = 1, potanum do
+                        if auto_curve then
+                            originalParryRemote:FireServer(0, CFrame.new(cf.Position, randomTarget), unpack(fireArgs))
+                        else
+                            originalParryRemote:FireServer(0, cf, unpack(fireArgs))
+                        end
+                    end
+                end)
+            else
+                ismyautoparryspamming = false
+            end
+        else
+            ismyautoparryspamming = false
+        end
+    end)
+end)
+
+local function linear_predict(a: Vector3, b: Vector3, time_volume: number)
+    time_volume = math.clamp(time_volume, 0, 1)
+    return a + (b - a) * time_volume
+end
+
+autoparryvico = RunService.Heartbeat:Connect(function()
+    -- Cek apakah aura diaktifkan dan pemain hidup
+    if not aura_Enabled or not (workspace.Alive:FindFirstChild(local_player.Name) or training_mode) then
+        aura_table.hit_Time = tick() * 10
+        aura_table.hit_Count = 0
+        aura_table.is_ball_Warping = false
+        aura_table.is_Spamming = false
+        aura_table.canParry = true
+        aura_table.last_target = nil
+        return
+    end
+
+    local ping = Stats.Network.ServerStatsItem["Data Ping"]:GetValue() / 10
+    local self = training_mode and getTrainingBall() or Nurysium_Util.getBall()
+
+    -- Cek apakah bola valid
+    if not self then
+        aura_table.hit_Time = tick() * 10
+        aura_table.hit_Count = 0
+        aura_table.is_ball_Warping = false
+        aura_table.is_Spamming = false
+        aura_table.canParry = true
+        aura_table.last_target = nil
+        return
+    end
+
+    self:GetAttributeChangedSignal('target'):Once(function()
+        aura_table.canParry = true
+    end)
+
+    if self:GetAttribute('target') ~= local_player.Name or not aura_table.canParry then
+        return
+    end
+
+    self:GetAttributeChangedSignal('from'):Once(function()
+        aura_table.last_target = workspace.Alive:FindFirstChild(self:GetAttribute('from'))
+    end)
+
+    get_closest_entity(local_player.Character.PrimaryPart)
+
+    local player_Position = local_player.Character.PrimaryPart.Position
+    local ball_Position = self.Position
+    local ball_Velocity = self.AssemblyLinearVelocity
+
+    if self:FindFirstChild("zoomies") then
+        ball_Velocity = self.zoomies.VectorVelocity
+    end
+
+    local ball_Direction = (player_Position - ball_Position).Unit
+    local ball_Distance = (player_Position - ball_Position).Magnitude
+    local ball_Dot = ball_Direction:Dot(ball_Velocity.Unit)
+    local ball_Speed = ball_Velocity.Magnitude
+
+    -- Untuk mendeteksi lebih dalam
+    local ball_properties = {
+        position = ball_Position,
+        velocity = ball_Velocity,
+        distance = (local_player.Character.PrimaryPart.Position - ball_Position).Magnitude,
+        speed = ball_Speed,
+        direction = (local_player.Character.PrimaryPart.Position - ball_Position).Unit,
+        dot = (local_player.Character.PrimaryPart.Position - ball_Position).Unit:Dot(ball_Velocity.Unit),
+    }
+
+    -- Cek apakah bola mendekati pemain
+    if ball_properties.dot < -0.2 then
+        aura_table.ball_Warping = tick()
+    end
+
+    -- Mekanisme anti-curve
+    if ball_Speed < 25 or ball_Velocity.Y > 10 then
+        aura_table.hit_Time = tick() * 10
+        aura_table.hit_Count = 0
+        aura_table.is_ball_Warping = false
+        aura_table.is_Spamming = false
+        aura_table.canParry = true
+        aura_table.last_target = nil
+        return
+    end
+
+    -- Memeriksa kecepatan pemain
+    local player_Velocity = local_player.Character.HumanoidRootPart.AssemblyLinearVelocity
+    local player_isMoving = player_Velocity.Magnitude > 0
+
+    -- Menghitung jarak dan arah target
+    local targetPosition = closest_Entity_To_mouse.HumanoidRootPart.Position
+    local target_Distance = local_player:DistanceFromCharacter(targetPosition)
+
+    -- Membatasi jarak dan arah target
+    local target_distance_Limited = math.min(target_Distance / 10000, 0.1)
+    local target_Direction = (local_player.Character.PrimaryPart.Position - closest_Entity.HumanoidRootPart.Position).Unit
+    local target_Velocity = closest_Entity.HumanoidRootPart.AssemblyLinearVelocity
+    local target_isMoving = target_Velocity.Magnitude > 0
+    local target_Dot = target_isMoving and math.max(target_Direction:Dot(target_Velocity.Unit), 0)
+
+    -- Menghitung rentang spam dan parry
+    aura_table.spam_Range = math.clamp(math.max(math.max(ping / 8.5, 15) + ball_Speed / 7.5, 8.4), 25, 1200)
+    local speedFactor = 3 - (ping / 100)
+    local speedFactorPingBased = 6.1 - (ping / 100)
+    aura_table.parry_Range = math.max(math.max(ping, 3.5) + ball_Speed / speedFactor, speedFactorPingBased)
+
+    -- Cek apakah sedang melakukan spam
+    aura_table.is_Spamming = aura_table.hit_Count > 1 or 
+        (target_Distance <= aura_table.spam_Range and ball_Distance < 18 and ball_Speed > 8 and 
+        ball_Velocity.Y > -50 and ball_Dot > 0.15)
+
+    -- Memeriksa apakah bola sedang mendekati
+    task.spawn(function()
+        if (tick() - aura_table.ball_Warping) >= 0.15 + target_distance_Limited - (ball_Speed / 1000) or ball_Distance <= 10 then
+            aura_table.is_ball_Warping = false
+            return
+        end
+
+        if aura_table.last_target then
+            if (ball_Position - aura_table.last_target.HumanoidRootPart.Position).Magnitude > 35.5 or target_Distance <= 12 then
+                aura_table.is_ball_Warping = false
+            end
+        end
+
+        aura_table.is_ball_Warping = true
+    end)
+
+    -- Untuk prediksi
+    local predicted_ball_Position = linear_predict(ball_Position, ball_Position + ball_Velocity * (ping / 100), 0.5)
+
+    -- Cek dan lakukan parry
+    if ball_Distance <= aura_table.parry_Range and 
+       not aura_table.is_ball_Warping and 
+       ball_Speed > 0 and 
+       ball_Dot > 0.1 then
+
+        local cf = camera.CFrame
+        local target_X = targetPosition.X
+        local target_Y = targetPosition.Y
+
+        originalParryRemote:FireServer(
+            0,
+            CFrame.new(cf.Position, predicted_ball_Position),
+            {[closest_Entity_To_mouse.Name] = targetPosition},
+            {target_X, target_Y},
+            false
+        )
+
+        aura_table.hit_Count = aura_table.hit_Count + 1
+        task.delay(0.55 + (ping / 100), function()
+            aura_table.hit_Count = aura_table.hit_Count - 1
+        end)
+
+        aura_table.hit_Time = tick()
+        aura_table.canParry = false
+    end
+
+    task.spawn(function()
+        repeat
+            RunService.PreRender:Wait()
+        until (tick() - aura_table.hit_Time) >= 1
+        aura_table.canParry = true
+    end)
+end)
+
+-- Tentukan fungsi pemutusan yang aman untuk menghindari kesalahan
+local function safeDisconnect(connection)
+    if connection and connection.Disconnect then
+        connection:Disconnect()
+    end
+end
+
+-- tabel untuk mengelola koneksi dengan benar
+local connections = {}
+
+-- Function untuk kelola koneksi
+local function manageConnection(flag, varName, runServiceFunc)
+    if flag then
+        if not connections[varName] then
+            -- Create the RunService connection if the flag is true and connection is not already created
+            connections[varName] = RunService[runServiceFunc]:Connect(function()
+                -- Your code for what the connection does
+            end)
+        end
+    else
+        -- Disconnect and clear the connection if the flag is false
+        safeDisconnect(connections[varName])
+        connections[varName] = nil
+    end
+end
+
+-- Main loop Rawr
+RunService.Heartbeat:Connect(function()
+    manageConnection(visualize_Enabled, "visualizervico", "Heartbeat")
+    manageConnection(auto_spam, "autospamvico", "Heartbeat")
+    manageConnection(aura_Enabled, "autoparryvico", "Heartbeat")
+    manageConnection(auto_win, "autowinvico", "Heartbeat")
+end)    
+
+-- Ui Lib!
+
+local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/DrRay-UI-Library/main/DrRay.lua"))()
+
+local window = DrRayLibrary:Load("DrRay", "Default")
+window:Open()
+
+local tab = DrRayLibrary.newTab("My Tab", "ImageIdHere")
+
+-- Inisialisasi variabel
+local autoParryEnabled = false
+local autoSpamEnabled = false
+local visualizerEnabled = false
+
+tab.newToggle("Auto Parry", "Toggle! (prints the state)", true, function(toggleState)
+    autoParryEnabled = toggleState
+    if toggleState then
+        print("Auto Parry On")
+        aura_Enabled = true  -- Menghidupkan fungsi Auto Parry
+        autoparryvico()       -- Pastikan fungsi autoparryvico sudah didefinisikan
+    else
+        print("Auto Parry Off")
+        aura_Enabled = false  -- Mematikan fungsi Auto Parry
+        -- Jika Anda ingin menghentikan fungsi, Anda bisa menambahkan logika di sini
+    end
+end)
+
+tab.newToggle("AutoSpam", "Toggle! (prints the state)", true, function(toggleState)
+    autoSpamEnabled = toggleState
+    if toggleState then
+        print("Auto Spam On")
+        auto_spam = true  -- Menghidupkan fungsi Auto Spam
+        autospamvico()    -- Pastikan fungsi autospamvico sudah didefinisikan
+    else
+        print("Auto Spam Off")
+        auto_spam = false  -- Mematikan fungsi Auto Spam
+        -- Jika Anda ingin menghentikan fungsi, Anda bisa menambahkan logika di sini
+    end
+end)
+
+tab.newToggle("Visualizer V2", "Toggle! (prints the state)", true, function(toggleState)
+    visualizerEnabled = toggleState
+    if toggleState then
+        print("Visualizer On")
+        visualize_Enabled = true  -- Menghidupkan fungsi Visualizer
+        visualizervico()           -- Pastikan fungsi visualizervico sudah didefinisikan
+    else
+        print("Visualizer Off")
+        visualize_Enabled = false  -- Mematikan fungsi Visualizer
+        -- Jika Anda ingin menghentikan fungsi, Anda bisa menambahkan logika di sini
+    end
+end)
+
+window:Hide()
+window:Show()
+window:Close()
+
+local mainColor = Color3.fromRGB(10, 30, 10) -- Customize as you wish; these are in RGB format. (mainColor applies to main colors like background, buttons, etc.)
+local secondColor = Color3.fromRGB(50, 50, 10) -- Secondary Color; applies to Toggle when activated and slider background.
+
+window:SetTheme(mainColor, secondColor)
