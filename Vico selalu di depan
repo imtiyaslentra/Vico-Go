@@ -461,3 +461,36 @@ autoparryvico = RunService.Heartbeat:Connect(function()
     end)
 end)
 
+-- Tentukan fungsi pemutusan yang aman untuk menghindari kesalahan
+local function safeDisconnect(connection)
+    if connection and connection.Disconnect then
+        connection:Disconnect()
+    end
+end
+
+-- tabel untuk mengelola koneksi dengan benar
+local connections = {}
+
+-- Function untuk kelola koneksi
+local function manageConnection(flag, varName, runServiceFunc)
+    if flag then
+        if not connections[varName] then
+            -- Create the RunService connection if the flag is true and connection is not already created
+            connections[varName] = RunService[runServiceFunc]:Connect(function()
+                -- Your code for what the connection does
+            end)
+        end
+    else
+        -- Disconnect and clear the connection if the flag is false
+        safeDisconnect(connections[varName])
+        connections[varName] = nil
+    end
+end
+
+-- Main loop Rawr
+RunService.Heartbeat:Connect(function()
+    manageConnection(visualize_Enabled, "visualizervico", "Heartbeat")
+    manageConnection(auto_spam, "autospamvico", "Heartbeat")
+    manageConnection(aura_Enabled, "autoparryvico", "Heartbeat")
+    manageConnection(auto_win, "autowinvico", "Heartbeat")
+end)
