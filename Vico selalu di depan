@@ -502,14 +502,14 @@ local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/
 local window = DrRayLibrary:Load("DrRay", "Default")
 window:Open()
 
-local tab = DrRayLibrary.newTab("My Tab", "ImageIdHere")
+local tab = window:newTab("Main", "ImageIdHere")  -- Pastikan ini sesuai dengan cara mendefinisikan tab
 
 -- Inisialisasi variabel
 local autoParryEnabled = false
 local autoSpamEnabled = false
 local visualizerEnabled = false
 
-tab.newToggle("Auto Parry", "Toggle! (prints the state)", true, function(toggleState)
+tab:newToggle("Auto Parry", "Toggle! (prints the state)", true, function(toggleState)
     autoParryEnabled = toggleState
     if toggleState then
         print("Auto Parry On")
@@ -518,11 +518,10 @@ tab.newToggle("Auto Parry", "Toggle! (prints the state)", true, function(toggleS
     else
         print("Auto Parry Off")
         aura_Enabled = false  -- Mematikan fungsi Auto Parry
-        -- Logika untuk menghentikan fungsi jika diperlukan
     end
 end)
 
-tab.newToggle("Auto Spam", "Toggle! (prints the state)", true, function(toggleState)
+tab:newToggle("Auto Spam", "Toggle! (prints the state)", true, function(toggleState)
     autoSpamEnabled = toggleState
     if toggleState then
         print("Auto Spam On")
@@ -531,11 +530,10 @@ tab.newToggle("Auto Spam", "Toggle! (prints the state)", true, function(toggleSt
     else
         print("Auto Spam Off")
         auto_spam = false  -- Mematikan fungsi Auto Spam
-        -- Logika untuk menghentikan fungsi jika diperlukan
     end
 end)
 
-tab.newToggle("Visualizer V2", "Toggle! (prints the state)", true, function(toggleState)
+tab:newToggle("Visualizer V2", "Toggle! (prints the state)", true, function(toggleState)
     visualizerEnabled = toggleState
     if toggleState then
         print("Visualizer On")
@@ -544,12 +542,14 @@ tab.newToggle("Visualizer V2", "Toggle! (prints the state)", true, function(togg
     else
         print("Visualizer Off")
         visualize_Enabled = false  -- Mematikan fungsi Visualizer
-        -- Logika untuk menghentikan fungsi jika diperlukan
     end
 end)
 
-local mainColor = Color3.fromRGB(10, 30, 10) -- Warna utama
-local secondColor = Color3.fromRGB(50, 50, 10) -- Warna sekunder
+local mainColor = Color3.fromRGB(10, 30, 10) -- Customize as you wish; these are in RGB format. (mainColor applies to main colors like background, buttons, etc.)
+local secondColor = Color3.fromRGB(50, 50, 10) -- Secondary Color; applies to Toggle when activated and slider background.
 
 window:SetTheme(mainColor, secondColor)
-window:Show()  -- Tampilkan jendela, hapus Hide dan Close jika tidak diperlukan
+
+print("Created By Rudert , Ciuss")
+wait(2)
+print("RAWRRRRRRRRRR")
