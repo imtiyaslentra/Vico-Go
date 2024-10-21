@@ -494,3 +494,62 @@ RunService.Heartbeat:Connect(function()
     manageConnection(aura_Enabled, "autoparryvico", "Heartbeat")
     manageConnection(auto_win, "autowinvico", "Heartbeat")
 end)
+
+-- LIBRARY DI BAWAH AJA
+
+local DrRayLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/AZYsGithub/DrRay-UI-Library/main/DrRay.lua"))()
+
+local window = DrRayLibrary:Load("DrRay", "Default")
+window:Open()
+
+local tab = DrRayLibrary.newTab("My Tab", "ImageIdHere")
+
+-- Inisialisasi variabel
+local autoParryEnabled = false
+local autoSpamEnabled = false
+local visualizerEnabled = false
+
+tab.newToggle("Auto Parry", "Toggle! (prints the state)", true, function(toggleState)
+    autoParryEnabled = toggleState
+    if toggleState then
+        print("Auto Parry On")
+        aura_Enabled = true  -- Menghidupkan fungsi Auto Parry
+        autoparryvico()       -- Pastikan fungsi autoparryvico sudah didefinisikan
+    else
+        print("Auto Parry Off")
+        aura_Enabled = false  -- Mematikan fungsi Auto Parry
+        -- Logika untuk menghentikan fungsi jika diperlukan
+    end
+end)
+
+tab.newToggle("Auto Spam", "Toggle! (prints the state)", true, function(toggleState)
+    autoSpamEnabled = toggleState
+    if toggleState then
+        print("Auto Spam On")
+        auto_spam = true  -- Menghidupkan fungsi Auto Spam
+        autospamvico()    -- Pastikan fungsi autospamvico sudah didefinisikan
+    else
+        print("Auto Spam Off")
+        auto_spam = false  -- Mematikan fungsi Auto Spam
+        -- Logika untuk menghentikan fungsi jika diperlukan
+    end
+end)
+
+tab.newToggle("Visualizer V2", "Toggle! (prints the state)", true, function(toggleState)
+    visualizerEnabled = toggleState
+    if toggleState then
+        print("Visualizer On")
+        visualize_Enabled = true  -- Menghidupkan fungsi Visualizer
+        visualizervico()           -- Pastikan fungsi visualizervico sudah didefinisikan
+    else
+        print("Visualizer Off")
+        visualize_Enabled = false  -- Mematikan fungsi Visualizer
+        -- Logika untuk menghentikan fungsi jika diperlukan
+    end
+end)
+
+local mainColor = Color3.fromRGB(10, 30, 10) -- Warna utama
+local secondColor = Color3.fromRGB(50, 50, 10) -- Warna sekunder
+
+window:SetTheme(mainColor, secondColor)
+window:Show()  -- Tampilkan jendela, hapus Hide dan Close jika tidak diperlukan
